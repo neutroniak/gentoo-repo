@@ -1,0 +1,11 @@
+#!/sbin/openrc-run
+# Copyright 1999-2018 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+start() {
+	su - dd-agent -c "datadog-agent start -c $DATADOG_CONFIG_FILE"
+}
+
+stop() {
+	killall datadog-agent
+}
