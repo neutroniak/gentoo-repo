@@ -2,10 +2,9 @@
 # Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-start() {
-	su - dd-agent -c "datadog-agent start -c $DATADOG_CONFIG_FILE"
-}
-
-stop() {
-	killall datadog-agent
-}
+command=/opt/datadog-agent/bin/agent/agent
+command_args="start ${DATADOG_ARGS} -c ${DATADOG_CONFIG_FILE}"
+name="Datadog Agent"
+pid_file="/var/run/datadog.pid"
+command_user="${DATADOG_USER:-dd-agent}:${DATADOG_GROUP:-dd-agent}"
+start_stop_daemon_args="--background"

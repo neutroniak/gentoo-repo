@@ -19,10 +19,11 @@ LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 
-IUSE=""
+IUSE="-snmp"
 
 DEPEND="dev-lang/go
 	dev-python/pip
+	snmp? ( net-analyzer/net-snmp )
 "
 
 RDEPEND="${DEPEND}
@@ -47,7 +48,12 @@ src_compile() {
 	export PATH=$PATH:$HOME/.local/bin/:$HOME/go/bin
 	cd ${_DEST}/${PN}
 	invoke deps
-	invoke agent.build --rebuild --build-exclude=snmp
+
+	if [ "$(usev snmp)"=="" ]; then
+		invoke agent.build --rebuild --build-exclude=snmp
+	else
+		invoke agent.build --rebuild --build-include=snmp
+	fi
 }
 
 src_install() {
