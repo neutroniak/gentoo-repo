@@ -5,7 +5,7 @@ EAPI=6
 
 inherit cmake-utils eutils
 
-DESCRIPTION="AWS SDk CPP version"
+DESCRIPTION="AWS SDK CPP"
 HOMEPAGE="https://github.com/aws/aws-sdk-cpp"
 SRC_URI="https://github.com/aws/aws-sdk-cpp/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
