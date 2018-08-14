@@ -32,7 +32,6 @@ src_prepare() {
 }
 
 src_configure() {
-	elog "==============================="$buildonly
 	local mycmakeargs=(
 		-DBUILD_ONLY=${buildonly::-1}
 	)
