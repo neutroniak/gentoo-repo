@@ -60,7 +60,7 @@ src_install() {
 	insinto /opt/datadog-agent/.local
 
 	doins -r $HOME/.local/*
-
+	
 	for integration in ${DATADOG_INTEGRATIONS}; do
 		elog "Entering directory $integration"
 		cd $integration

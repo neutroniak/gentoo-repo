@@ -33,6 +33,8 @@ RDEPEND="${DEPEND}
 
 _DEST=${HOME}/go/src/github.com/DataDog
 
+JMXVERSION="0.20.1"
+
 pkg_setup() {
 	enewgroup dd-agent
 	enewuser dd-agent -1 /bin/sh /opt/datadog-agent dd-agent
@@ -83,12 +85,18 @@ src_install() {
 	fperms 0755 /opt/datadog-agent/bin/agent/agent
 
 	dodir /opt/datadog-agent/bin/agent/dist
+	dodir /opt/datadog-agent/bin/agent/dist/jmx
 	insinto /opt/datadog-agent/bin/agent/dist
 	doins -r ${_DEST}/${PN}/bin/agent/dist/checks
 	doins -r ${_DEST}/${PN}/bin/agent/dist/templates
 	doins -r ${_DEST}/${PN}/bin/agent/dist/utils
 	doins -r ${_DEST}/${PN}/bin/agent/dist/views
 	doins ${_DEST}/${PN}/bin/agent/dist/config.py
+
+	dodir /opt/datadog-agent/bin/agent/dist/jmx
+	insinto /opt/datadog-agent/bin/agent/dist/jmx
+	wget https://dd-jmxfetch.s3.amazonaws.com/jmxfetch-${JMXVERSION}-jar-with-dependencies.jar 
+	newins jmxfetch-${JMXVERSION}-jar-with-dependencies.jar jmxfetch-${JMXVERSION}-jar-with-dependencies.jar  
 
 	keepdir /var/log/datadog
 	dodir /var/run/datadog
@@ -100,3 +108,4 @@ src_install() {
 	fowners -R dd-agent:dd-agent /var/log/datadog
 	fowners -R dd-agent:dd-agent /var/run/datadog
 }
+
