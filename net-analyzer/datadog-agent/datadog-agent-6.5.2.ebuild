@@ -22,6 +22,7 @@ KEYWORDS="~amd64 ~x86"
 IUSE="-snmp"
 
 DEPEND="dev-lang/go
+	dev-vcs/mercurial
 	dev-python/pip
 	snmp? ( net-analyzer/net-snmp )
 "
@@ -60,7 +61,7 @@ src_compile() {
 	# Moving back to dd dir
 	cd ${_DEST}/${PN}
 	#.. and run dep
-	${GOPATH}/bin/dep ensure
+	${GOPATH}/bin/dep ensure -v
 
 	if [ "$(usev snmp)"=="" ]; then
 		invoke agent.build --rebuild --build-exclude=snmp
