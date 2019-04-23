@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -34,7 +34,7 @@ RDEPEND="${DEPEND}
 
 _DEST=${HOME}/go/src/github.com/DataDog
 
-JMXVERSION="0.20.2"
+JMXVERSION="0.27.0"
 
 pkg_setup() {
 	enewgroup dd-agent
@@ -107,7 +107,7 @@ src_install() {
 
 	dodir /opt/datadog-agent/bin/agent/dist/jmx
 	insinto /opt/datadog-agent/bin/agent/dist/jmx
-	wget https://dd-jmxfetch.s3.amazonaws.com/jmxfetch-${JMXVERSION}-jar-with-dependencies.jar 
+	wget https://dl.bintray.com/datadog/datadog-maven/com/datadoghq/jmxfetch/${JMXVERSION}/jmxfetch-${JMXVERSION}-jar-with-dependencies.jar
 	newins jmxfetch-${JMXVERSION}-jar-with-dependencies.jar jmxfetch-${JMXVERSION}-jar-with-dependencies.jar  
 
 	keepdir /var/log/datadog
