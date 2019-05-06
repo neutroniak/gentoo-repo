@@ -49,6 +49,7 @@ src_compile() {
 	export GOBIN=${GOPATH}/bin
 	export PATH=$PATH:$HOME/.local/bin/:${GOPATH}/bin
 	cp -r "${WORKDIR}/${P}" "${_DEST}/${PN}"
+	pip install pyyaml --user
 	pip install invoke --user
 	pip install wheel --user
 	cd ${_DEST}/${PN}
