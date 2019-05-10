@@ -3,7 +3,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 command=/opt/datadog-agent/bin/agent/agent
-command_args="start ${DATADOG_ARGS} -c ${DATADOG_CONFIG_FILE}"
+command_args="run ${DATADOG_ARGS} -c ${DATADOG_CONFIG_FILE}"
 name="Datadog Agent"
 pid_file="/var/run/datadog.pid"
 command_user="${DATADOG_USER:-dd-agent}:${DATADOG_GROUP:-dd-agent}"

@@ -132,29 +132,16 @@ src_prepare() {
 }
 
 src_compile() {
-	GOPATH="${S}" go build -race -o 'bin/agent' -tags '--build-include=apm cpython jmx log netcgo process zlib secrets' -tags '--build-exclude=systemd' 'github.com/DataDog/datadog-agent/cmd/agent'
+	GOOS="Gentoo"
+	GOARCH="x86-64"
+	GOPATH="${S}" go build -a -race -o 'bin/agent' -tags '--build-include=apm cpython jmx log netcgo process zlib secrets' -tags '--build-exclude=systemd' 'github.com/DataDog/datadog-agent/cmd/agent'
 	GOPATH="${S}" go generate 'github.com/DataDog/datadog-agent/cmd/agent'
 
-	GOPATH="${S}" go build -race -o 'bin/dogstatsd' 'github.com/DataDog/datadog-agent/cmd/dogstatsd'
+	GOPATH="${S}" go build -a -race -o 'bin/dogstatsd' 'github.com/DataDog/datadog-agent/cmd/dogstatsd'
 	GOPATH="${S}" go generate 'github.com/DataDog/datadog-agent/cmd/dogstatsd'
 
-	GOPATH="${S}" go build -race -o 'bin/dogstatsd' 'github.com/DataDog/datadog-agent/cmd/trace-agent'
-	GOPATH="${S}" go generate 'github.com/DataDog/datadog-agent/cmd/trace-agent'
-
-	cd ${S}"/src/github.com/DataDog/datadog-agent/vendor/github.com/DataDog/integrations-core"
-
-	pip install -r requirements-dev.txt --user
-
-	pip install wheel --user
-
-	DATADOG_INTEGRATIONS="$(usev active_directory) $(usev activemq) $(usev activemq_xml) $(usev agent_metrics) $(usev apache) $(usev btrfs) $(usev cacti) $(usev cassandra) $(usev cassandra_nodetool) $(usev ceph) $(usev consul) $(usev couch) $(usev couchbase) $(usev directory) $(usev disk) $(usev dns_check) $(usev docker_daemon) $(usev elastic) $(usev envoy) $(usev etcd) $(usev fluentd) $(usev gearmand) $(usev gitlab) $(usev gitlab_runner) $(usev go_expvar) $(usev go-metro) $(usev gunicorn) $(usev haproxy) $(usev hdfs_datanode) $(usev hdfs_namenode) $(usev http_check) $(usev istio) $(usev kafka) $(usev kafka_consumer) $(usev kong) $(usev kube_dns) $(usev kubelet) $(usev kube_proxy) $(usev kubernetes) $(usev kubernetes_state) $(usev kyototycoon) $(usev lighttpd) $(usev linkerd) $(usev linux_proc_extras) $(usev mapreduce) $(usev marathon) $(usev mcache) $(usev mesos_master) $(usev mesos_slave) $(usev mongo) $(usev mysql) $(usev nagios) $(usev network) $(usev nfsstat) $(usev nginx) $(usev ntp) $(usev openstack) $(usev oracle) $(usev pdh_check) $(usev pgbouncer) $(usev php_fpm) $(usev postfix) $(usev postgres) $(usev powerdns_recursor) $(usev process) $(usev prometheus) $(usev rabbitmq) $(usev redisdb) $(usev riak) $(usev riakcs) $(usev snmp) $(usev solr) $(usev spark) $(usev squid) $(usev ssh_check) $(usev statsd) $(usev supervisord) $(usev system_core) $(usev system_swap) $(usev tasks) $(usev tcp_check) $(usev teamcity) $(usev tokumx) $(usev twemproxy) $(usev varnish) $(usev vsphere) $(usev yarn) $(usev zk)"
-
-	for integration in ${DATADOG_INTEGRATIONS}; do
-		elog "Entering directory $integration"
-		cd $integration
-		pip install . --user
-		cd ..
-	done
+	#GOPATH="${S}" go build -race -o 'bin/dogstatsd' 'github.com/DataDog/datadog-agent/cmd/trace-agent'
+	#GOPATH="${S}" go generate 'github.com/DataDog/datadog-agent/cmd/trace-agent'
 }
 
 src_install() {
@@ -167,7 +154,6 @@ src_install() {
 	doins ${S}/bin/dogstatsd
 	fperms 0755 /opt/datadog-agent/bin/agent/agent
 	fperms 0755 /opt/datadog-agent/bin/agent/dogstatsd
-
 
 	newinitd "${FILESDIR}"/datadog-agent.initd datadog-agent
 	newconfd "${FILESDIR}"/datadog-agent.confd datadog-agent
@@ -191,7 +177,6 @@ src_install() {
 	doins -r ${DDROOT}/cmd/agent/dist/conf.d/file_handle.d
 
 	dodir /opt/datadog-agent/bin/agent/dist
-	dodir /opt/datadog-agent/bin/agent/dist/jmx
 	insinto /opt/datadog-agent/bin/agent/dist
 	doins -r ${DDROOT}/cmd/agent/dist/checks
 	doins -r ${DDROOT}/pkg/status/dist/templates
@@ -199,24 +184,35 @@ src_install() {
 	#doins -r ${DDROOT}/cmd/agent/dist/views
 	doins ${DDROOT}/cmd/agent/dist/config.py
 
-	dodir /opt/datadog-agent/bin/agent/dist/jmx
-	insinto /opt/datadog-agent/bin/agent/dist/jmx
-	wget https://dl.bintray.com/datadog/datadog-maven/com/datadoghq/jmxfetch/${JMXVERSION}/jmxfetch-${JMXVERSION}-jar-with-dependencies.jar
-	newins jmxfetch-${JMXVERSION}-jar-with-dependencies.jar jmxfetch-${JMXVERSION}-jar-with-dependencies.jar  
-
 	keepdir /var/log/datadog
 	dodir /var/run/datadog
 	fperms 0700 /var/log/datadog
 	fperms 0700 /var/run/datadog
+}
+
+pkg_preinst() {
+	dodir /opt/datadog-agent/bin/agent/dist/jmx
+	insinto /opt/datadog-agent/bin/agent/dist/jmx
+
+	wget https://dl.bintray.com/datadog/datadog-maven/com/datadoghq/jmxfetch/${JMXVERSION}/jmxfetch-${JMXVERSION}-jar-with-dependencies.jar
+	newins jmxfetch-${JMXVERSION}-jar-with-dependencies.jar jmxfetch-${JMXVERSION}-jar-with-dependencies.jar  
 
 	#integrations
-	keepdir /opt/datadog-agent/.local
+	dodir /opt/datadog-agent/.local
 	dosym /opt/datadog-agent/.local /opt/datadog-agent/embedded
-	insinto /opt/datadog-agent/.local
-	doins -r $HOME/.local/*
+	cd ${S}"/src/github.com/DataDog/datadog-agent/vendor/github.com/DataDog/integrations-core"
+
+	pip install -r requirements-agent-release.txt --user
+
+	pip install wheel --user
+	pip install pympler --user
+
+	DATADOG_INTEGRATIONS="$(usev active_directory) $(usev activemq) $(usev activemq_xml) $(usev agent_metrics) $(usev apache) $(usev btrfs) $(usev cacti) $(usev cassandra) $(usev cassandra_nodetool) $(usev ceph) $(usev consul) $(usev couch) $(usev couchbase) $(usev directory) $(usev disk) $(usev dns_check) $(usev docker_daemon) $(usev elastic) $(usev envoy) $(usev etcd) $(usev fluentd) $(usev gearmand) $(usev gitlab) $(usev gitlab_runner) $(usev go_expvar) $(usev go-metro) $(usev gunicorn) $(usev haproxy) $(usev hdfs_datanode) $(usev hdfs_namenode) $(usev http_check) $(usev istio) $(usev kafka) $(usev kafka_consumer) $(usev kong) $(usev kube_dns) $(usev kubelet) $(usev kube_proxy) $(usev kubernetes) $(usev kubernetes_state) $(usev kyototycoon) $(usev lighttpd) $(usev linkerd) $(usev linux_proc_extras) $(usev mapreduce) $(usev marathon) $(usev mcache) $(usev mesos_master) $(usev mesos_slave) $(usev mongo) $(usev mysql) $(usev nagios) $(usev network) $(usev nfsstat) $(usev nginx) $(usev ntp) $(usev openstack) $(usev oracle) $(usev pdh_check) $(usev pgbouncer) $(usev php_fpm) $(usev postfix) $(usev postgres) $(usev powerdns_recursor) $(usev process) $(usev prometheus) $(usev rabbitmq) $(usev redisdb) $(usev riak) $(usev riakcs) $(usev snmp) $(usev solr) $(usev spark) $(usev squid) $(usev ssh_check) $(usev statsd) $(usev supervisord) $(usev system_core) $(usev system_swap) $(usev tasks) $(usev tcp_check) $(usev teamcity) $(usev tokumx) $(usev twemproxy) $(usev varnish) $(usev vsphere) $(usev yarn) $(usev zk)"
+
 	for integration in ${DATADOG_INTEGRATIONS}; do
 		elog "Entering directory $integration"
 		cd $integration
+		pip install . --user
 		dodir /etc/datadog-agent/conf.d/${integration}.d
 		insinto /etc/datadog-agent/conf.d/${integration}.d
 
@@ -232,26 +228,11 @@ src_install() {
 		cd ..
 	done
 
+	insinto /opt/datadog-agent/.local
+	doins -r $HOME/.local/*
+
 	fowners -R dd-agent:dd-agent /etc/datadog-agent
 	fowners -R dd-agent:dd-agent /opt/datadog-agent
 	fowners -R dd-agent:dd-agent /var/log/datadog
 	fowners -R dd-agent:dd-agent /var/run/datadog
 }
-
-#src_install() {
-	#insinto /opt/datadog-agent/bin/agent
-#	dobin ${D}/usr/bin/agent datadog-agent
-#}
-
-#src_compile() {
-#       ebegin "Building datadog-agent ${PV}"
-#
-#       cd ${DDROOT}/${PN}
-#       if [ "$(usev snmp)"=="" ]; then
-#               invoke agent.build --rebuild --build-exclude=snmp
-#       else
-#               invoke agent.build --rebuild --build-include=snmp
-#       fi
-#}
-
-
