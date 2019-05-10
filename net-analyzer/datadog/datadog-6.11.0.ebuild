@@ -40,7 +40,7 @@ EGO_VENDOR=(
 "github.com/go-yaml/yaml d670f9405373e636a5a2765eea47fac0c9bc91a4"
 "github.com/zorkian/go-datadog-api v2.12.0"
 "github.com/aws/aws-sdk-go v1.12.74"
-"github.com/lxn/win master"
+"github.com/lxn/win 7e1250ba2e7749fb9eb865da9ee93fb5a2fe73f1"
 "github.com/StackExchange/wmi 5d049714c4a64225c3c79a7cf7d02f7fb5b96338"
 "github.com/jhoonb/archivex be4efa7ec0c38ab76d56037014c90d48d6b13037"
 "github.com/ugorji/go 8c0409fcbb70099c748d71f714529204975f6c3f"
