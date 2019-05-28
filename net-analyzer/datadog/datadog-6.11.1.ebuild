@@ -124,7 +124,7 @@ RDEPEND="${DEPEND}
 	snmp? ( net-analyzer/net-snmp )
 "
 
-JMXVERSION="0.23.0"
+JMXVERSION="0.27.0"
 AGENT_PAYLOAD_VERSION="4.7.1"
 
 pkg_setup() {
@@ -134,26 +134,23 @@ pkg_setup() {
 
 src_prepare() {
 	default
-	#cd "${S}/src/github.com/DataDog/datadog-agent/"
-	#eapply "${FILESDIR}/datadog-fix-version-${PV}.patch"
+	cd "${S}/src/github.com/DataDog/datadog-agent/"
+	eapply "${FILESDIR}/datadog-fix-version-${PV}.patch"
 }
 
 src_compile() {
 	REPO_PATH="github.com/DataDog/datadog-agent"
-	GOPATH="${S}" go build -a -o 'bin/agent/agent' \
-		-ldflags "-X ${REPO_PATH}/pkg/version.AgentVersion=${PV} \
-			-X ${REPO_PATH}/pkg/serializer.AgentPayloadVersion=${AGENT_PAYLOAD_VERSION} \
-			-X ${REPO_PATH}/pkg/collector/py.pythonHome=/opt/datadog-agent/embedded \
-			-r /opt/datadog-agent/embedded/lib" \
+	GOPATH="${S}" go build -race -a -o 'bin/agent/agent' \
+		-ldflags "-X ${REPO_PATH}/pkg/version/version.AgentVersion=${PV} -X ${REPO_PATH}/pkg/serializer.AgentPayloadVersion=${AGENT_PAYLOAD_VERSION} -X ${REPO_PATH}/pkg/collector/py.pythonHome=/usr -r /usr/lib64" \
 			-tags 'jmx log cpython process zlib netcgo secrets' \
 			${REPO_PATH}'/cmd/agent'
 	GOPATH="${S}" go generate ${REPO_PATH}'/cmd/agent'
 
-	GOPATH="${S}" go build -a -o 'bin/dogstatsd' 'github.com/DataDog/datadog-agent/cmd/dogstatsd'
+	GOPATH="${S}" go build -race -a -o 'bin/dogstatsd' 'github.com/DataDog/datadog-agent/cmd/dogstatsd'
 	GOPATH="${S}" go generate 'github.com/DataDog/datadog-agent/cmd/dogstatsd'
 
-	#GOPATH="${S}" go build -o 'bin/trace-agent' 'github.com/DataDog/datadog-agent/cmd/trace-agent'
-	#GOPATH="${S}" go generate 'github.com/DataDog/datadog-agent/cmd/trace-agent'
+	GOPATH="${S}" go build -race -o 'bin/trace-agent' 'github.com/DataDog/datadog-agent/cmd/trace-agent'
+	GOPATH="${S}" go generate 'github.com/DataDog/datadog-agent/cmd/trace-agent'
 }
 
 src_install() {
@@ -164,7 +161,7 @@ src_install() {
 	insinto /opt/datadog-agent/bin/agent
 	doins ${S}/bin/agent/agent
 	doins ${S}/bin/dogstatsd
-	#doins ${S}/bin/trace-agent
+	doins ${S}/bin/trace-agent
 	fperms 0755 /opt/datadog-agent/bin/agent/agent
 	fperms 0755 /opt/datadog-agent/bin/agent/dogstatsd
 
@@ -216,8 +213,8 @@ pkg_preinst() {
 
 	pip install -r requirements-agent-release.txt --user
 
-	pip install wheel --user
-	pip install pyyaml --user
+#	pip install wheel --user
+#	pip install pyyaml --user
 
 	DATADOG_INTEGRATIONS="$(usev active_directory) $(usev activemq) $(usev activemq_xml) $(usev agent_metrics) $(usev apache) $(usev btrfs) $(usev cacti) $(usev cassandra) $(usev cassandra_nodetool) $(usev ceph) $(usev consul) $(usev couch) $(usev couchbase) $(usev directory) $(usev disk) $(usev dns_check) $(usev docker_daemon) $(usev elastic) $(usev envoy) $(usev etcd) $(usev fluentd) $(usev gearmand) $(usev gitlab) $(usev gitlab_runner) $(usev go_expvar) $(usev go-metro) $(usev gunicorn) $(usev haproxy) $(usev hdfs_datanode) $(usev hdfs_namenode) $(usev http_check) $(usev istio) $(usev kafka) $(usev kafka_consumer) $(usev kong) $(usev kube_dns) $(usev kubelet) $(usev kube_proxy) $(usev kubernetes) $(usev kubernetes_state) $(usev kyototycoon) $(usev lighttpd) $(usev linkerd) $(usev linux_proc_extras) $(usev mapreduce) $(usev marathon) $(usev mcache) $(usev mesos_master) $(usev mesos_slave) $(usev mongo) $(usev mysql) $(usev nagios) $(usev network) $(usev nfsstat) $(usev nginx) $(usev ntp) $(usev openstack) $(usev oracle) $(usev pdh_check) $(usev pgbouncer) $(usev php_fpm) $(usev postfix) $(usev postgres) $(usev powerdns_recursor) $(usev process) $(usev prometheus) $(usev rabbitmq) $(usev redisdb) $(usev riak) $(usev riakcs) $(usev snmp) $(usev solr) $(usev spark) $(usev squid) $(usev ssh_check) $(usev statsd) $(usev supervisord) $(usev system_core) $(usev system_swap) $(usev tasks) $(usev tcp_check) $(usev teamcity) $(usev tokumx) $(usev twemproxy) $(usev varnish) $(usev vsphere) $(usev yarn) $(usev zk)"
 
