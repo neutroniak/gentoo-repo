@@ -1,14 +1,18 @@
 diff --git a/pkg/version/base.go b/pkg/version/base.go
-index 5fa81bd7..75f97e61 100644
+index 5fa81bd7..063ce866 100644
 --- a/pkg/version/base.go
 +++ b/pkg/version/base.go
-@@ -13,7 +13,7 @@ var AgentVersion string
+@@ -13,10 +13,10 @@ var AgentVersion string
  // Commit is populated with the short commit hash from which the Agent was built
  var Commit string
  
 -var agentVersionDefault = "6.0.0"
-+var agentVersionDefault = "6.11.1"
++var agentVersionDefault = "6.11.2"
  
  func init() {
- 	if AgentVersion == "" {
- 
+-	if AgentVersion == "" {
++	//if AgentVersion == "" {
+ 		AgentVersion = agentVersionDefault
+-	}
++	//}
+ }
