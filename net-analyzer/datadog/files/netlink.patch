@@ -1,0 +1,14 @@
+diff --git vendor/github.com/mdlayher/netlink/conn_linux.go vendor/github.com/mdlayher/netlink/conn_linux.go
+index b4d19d3..4cc51f8 100644
+--- vendor/github.com/mdlayher/netlink/conn_linux.go
++++ vendor/github.com/mdlayher/netlink/conn_linux.go
+@@ -607,7 +607,8 @@ func (s *sysSocket) SetSockoptInt(level, opt, value int) error {
+ func (s *sysSocket) SetSockoptSockFprog(level, opt int, fprog *unix.SockFprog) error {
+ 	var err error
+ 	doErr := s.control(func(fd int) {
+-		err = unix.SetsockoptSockFprog(fd, level, opt, fprog)
++		//err = unix.SetsockoptSockFprog(fd, level, opt, fprog)
++		return;
+ 	})
+ 	if doErr != nil {
+ 		return doErr

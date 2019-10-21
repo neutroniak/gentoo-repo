@@ -1,0 +1,13 @@
+diff --git vendor/github.com/DataDog/datadog-agent/pkg/version/base.go vendor/github.com/DataDog/datadog-agent/pkg/version/base.go
+index 5fa81bd72..330ed383a 100644
+--- vendor/github.com/DataDog/datadog-agent/pkg/version/base.go
++++ vendor/github.com/DataDog/datadog-agent/pkg/version/base.go
+@@ -13,7 +13,7 @@ var AgentVersion string
+ // Commit is populated with the short commit hash from which the Agent was built
+ var Commit string
+ 
+-var agentVersionDefault = "6.0.0"
++var agentVersionDefault = "6.14.0"
+ 
+ func init() {
+ 	if AgentVersion == "" {
