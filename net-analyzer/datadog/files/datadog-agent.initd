@@ -2,7 +2,8 @@
 # Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-command=/opt/datadog-agent/bin/agent/agent
+export LD_LIBRARY_PATH="/opt/datadog-agent/embedded/lib64"
+command=" /opt/datadog-agent/bin/agent/agent"
 command_args="run ${DATADOG_ARGS} -c ${DATADOG_CONFIG_FILE}"
 name="Datadog Agent"
 pid_file="/var/run/datadog-agent.pid"
