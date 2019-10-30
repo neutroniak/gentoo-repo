@@ -118,6 +118,7 @@ KEYWORDS="~amd64 ~x86"
 DEPEND=">=dev-lang/go-1.10.8
 	dev-vcs/mercurial
 	dev-python/pip
+	dev-util/cmake
 "
 
 RDEPEND="${DEPEND}
