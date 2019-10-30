@@ -1,0 +1,11 @@
+#!/sbin/openrc-run
+# Copyright 2019 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+name="DataDog process-agent daemon"
+description=""
+command_args=""
+command=/opt/datadog-agent/embedded/bin/process-agent
+command_user="${DATADOG_USER:-dd-agent}:${DATADOG_GROUP:-dd-agent}"
+pid_file="/var/run/process-agent.pid"
+

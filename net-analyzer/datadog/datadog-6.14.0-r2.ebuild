@@ -94,6 +94,9 @@ EGO_VENDOR=(
 "github.com/florianl/go-conntrack 6d50e184fe3ef7ba0640303db5e6a5610bf4a297"
 "github.com/pkg/errors 645ef00459ed84a119197bfb8d8205042c6df63d"
 "github.com/mdlayher/netlink 0087c778e46953b58a4434583a8274f8e8aa2b78"
+"github.com/benesch/cgosymbolizer bec6fe6e597bfeb28b9d8c0b998772635fceea8b"
+"github.com/coreos/go-semver 8ab6407b697782a06568d4b7f1db25550ec2e4c6"
+"github.com/ianlancetaylor/cgosymbolizer f5072df9c550dc687157e5d7efb50825cdf8f0eb"
 )
 
 inherit user golang-base golang-build golang-vcs-snapshot epatch
@@ -126,6 +129,7 @@ RDEPEND="${DEPEND}
 
 JMXVERSION="0.31.0"
 AGENT_PAYLOAD_VERSION="4.7.1"
+REPO_PATH="github.com/DataDog/datadog-agent"
 
 pkg_setup() {
 	enewgroup dd-agent
@@ -139,9 +143,21 @@ src_prepare() {
 	epatch "${FILESDIR}/netlink.patch"
 }
 
+build_rtloader() {
+	cd ${S}"/src/"${REPO_PATH}"/rtloader"
+	mkdir build
+	cd build
+	cmake -DBUILD_DEMO:BOOL=OFF -DCMAKE_INSTALL_PREFIX=../install -DDISABLE_PYTHON2:BOOL=OFF -DDISABLE_PYTHON3:BOOL=ON ..
+	make
+	make install
+}
+
 src_compile() {
-	REPO_PATH="github.com/DataDog/datadog-agent"
-	GOPATH="${S}" go build -race -a -o 'bin/agent/agent' -ldflags "-X ${REPO_PATH}/pkg/version.AgentVersion=${PV} -X ${REPO_PATH}/pkg/serializer.AgentPayloadVersion=${AGENT_PAYLOAD_VERSION} -X ${REPO_PATH}/pkg/collector/py.pythonHome=/usr -r /usr/lib64 -X ${REPO_PATH}/pkg/version.Commit=748545e4d -X ${REPO_PATH}/pkg/version.AgentVersion=6.14.0 -X 'main.version=6.14.0' " -tags 'jmx log cpython process zlib netcgo secrets' ${REPO_PATH}'/cmd/agent'
+	build_rtloader
+	cd ${S}
+	CGO_CFLAGS="-Wall -I${S}/src/${REPO_PATH}/rtloader/install/include" \
+	CGO_LDFLAGS="-L${S}/src/${REPO_PATH}/rtloader/install/lib64" \
+	GOPATH="${S}" go build -race -a -o 'bin/agent/agent' -gcflags="" -ldflags "-X ${REPO_PATH}/pkg/version.AgentVersion=${PV} -X ${REPO_PATH}/pkg/serializer.AgentPayloadVersion=${AGENT_PAYLOAD_VERSION} -X ${REPO_PATH}/pkg/collector/py.pythonHome=/usr -r /usr/lib64 -X ${REPO_PATH}/pkg/version.Commit=748545e4d -X ${REPO_PATH}/pkg/version.AgentVersion=6.14.0 -X 'main.version=6.14.0'-X github.com/DataDog/datadog-agent/pkg/collector/python.pythonHome2=/opt/datadog-agent/embedded " -tags 'jmx log cpython python process zlib netcgo secrets' ${REPO_PATH}'/cmd/agent'
 	GOPATH="${S}" go generate ${REPO_PATH}'/cmd/agent'
 
 	GOPATH="${S}" go build -race -a -o 'bin/dogstatsd' ${REPO_PATH}'/cmd/dogstatsd'
@@ -150,8 +166,8 @@ src_compile() {
 	GOPATH="${S}" go build -race -a -o 'bin/trace-agent' ${REPO_PATH}'/cmd/trace-agent'
 	GOPATH="${S}" go generate ${REPO_PATH}'/cmd/trace-agent'
 
-	GOPATH="${S}" go build -v -a -o 'bin/process-agent' -tags 'jmx log cpython process zlib netcgo secrets' -ldflags="-X ${REPO_PATH}/pkg/version.Commit=748545e4 -X ${REPO_PATH}/pkg/version.AgentVersion=6.14.0 -X ${REPO_PATH}/pkg/serializer.AgentPayloadVersion=4.12.0 -r /usr/lib64 -X 'main.GitBranch=HEAD' -X 'main.Version=6.14.0' -X 'main.GoVersion=go version go1.12.9 linux/amd64'" ${REPO_PATH}'/cmd/process-agent'
-	GOPATH="${S}" go generate -v ${REPO_PATH}'/cmd/process-agent'
+	GOPATH="${S}" go build -a -o 'bin/process-agent' -tags 'jmx log python process zlib netcgo secrets' -ldflags="-X ${REPO_PATH}/pkg/version.Commit=748545e4 -X ${REPO_PATH}/pkg/version.AgentVersion=6.14.0 -X ${REPO_PATH}/pkg/serializer.AgentPayloadVersion=4.12.0 -r /usr/lib64 -X 'main.GitBranch=HEAD' -X 'main.Version=6.14.0' -X 'main.GoVersion=go version go1.12.9 linux/amd64'" ${REPO_PATH}'/cmd/process-agent'
+	GOPATH="${S}" go generate ${REPO_PATH}'/cmd/process-agent'
 
 	GOPATH="${S}" go run src/${REPO_PATH}/pkg/config/render_config.go agent-py2py3 src/${REPO_PATH}/pkg/config/config_template.yaml src/${REPO_PATH}/cmd/agent/dist/datadog.yaml
 
@@ -176,7 +192,15 @@ src_install() {
 	fperms 0755 /opt/datadog-agent/.local/bin/process-agent
 
 	newinitd "${FILESDIR}"/datadog-agent.initd datadog-agent
+	newinitd "${FILESDIR}"/process-agent.initd process-agent
 	newconfd "${FILESDIR}"/datadog-agent.confd datadog-agent
+
+	insinto /opt/datadog-agent/.local/lib64
+	doins ${S}/src/${REPO_PATH}/rtloader/install/lib64/*
+	fperms 0755  /opt/datadog-agent/.local/lib64/libdatadog-agent-rtloader.so.0.1.0
+	fperms 0755  /opt/datadog-agent/.local/lib64/libdatadog-agent-two.so
+	insinto /opt/datadog-agent/.local/include
+	doins ${S}/src/${REPO_PATH}/rtloader/install/include/*
 
 	keepdir /etc/datadog-agent
 	keepdir /etc/datadog-agent/conf.d
