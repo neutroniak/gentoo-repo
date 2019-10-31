@@ -8,4 +8,4 @@ command_args=""
 command=/opt/datadog-agent/embedded/bin/process-agent
 command_user="${DATADOG_USER:-dd-agent}:${DATADOG_GROUP:-dd-agent}"
 pid_file="/var/run/process-agent.pid"
-
+start_stop_daemon_args="--background"
