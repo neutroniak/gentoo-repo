@@ -139,7 +139,7 @@ pkg_setup() {
 src_prepare() {
 	cd "${S}/src/github.com/DataDog/datadog-agent/"
 	default
-	#epatch "${FILESDIR}/datadog-fix-version-${PV}.patch"
+	epatch "${FILESDIR}/datadog-fix-version-${PV}.patch"
 	epatch "${FILESDIR}/netlink.patch"
 }
 
