@@ -5,15 +5,17 @@ EAPI=6
 
 EGO_PN="github.com/DataDog/datadog-agent/..."
 
+JMXVERSION="0.33.0"
+AGENT_PAYLOAD_VERSION="4.14.0"
+
 EGO_VENDOR=(
 "github.com/DataDog/datadog-agent ${PV}"
 "github.com/DataDog/integrations-core ${PV}"
-"github.com/DataDog/agent-payload 4.7.1"
+"github.com/DataDog/agent-payload ${AGENT_PAYLOAD_VERSION}"
 "github.com/DataDog/gohai master"
 "github.com/DataDog/zstd v1.3.0"
-#"github.com/Microsoft/go-winio v0.4.7"
 "github.com/hashicorp/consul v1.0.0"
-"github.com/beevik/ntp cb3dae3a7588ae35829eb5724df611cd75152fba"
+"github.com/beevik/ntp 62c80a04de2086884d8296004b6d74ee1846c582"
 "github.com/cihub/seelog v2.6"
 "github.com/coreos/etcd v3.2.0"
 "github.com/docker/docker v1.13.1"
@@ -32,15 +34,15 @@ EGO_VENDOR=(
 "github.com/patrickmn/go-cache v2.1.0"
 "github.com/sbinet/go-python master"
 "github.com/shirou/gopsutil v2.18.12"
+"github.com/DataDog/gopsutil 833e93ecbcfd25e491eceea5e42c49c22dac7ed1"
 "github.com/spf13/cobra v0.0.1"
 "github.com/json-iterator/go 1.1.4"
-"github.com/DataDog/viper v1.5.0"
+"github.com/DataDog/viper v1.7.0"
 "github.com/coreos/go-systemd v16"
 "github.com/stretchr/testify v1.2.1"
 "github.com/go-yaml/yaml d670f9405373e636a5a2765eea47fac0c9bc91a4"
 "github.com/zorkian/go-datadog-api v2.12.0"
 "github.com/aws/aws-sdk-go v1.12.74"
-#"github.com/lxn/win 5d15a47a4bff225b55d3eacd9ac2fbadd9696a20"
 "github.com/StackExchange/wmi 5d049714c4a64225c3c79a7cf7d02f7fb5b96338"
 "github.com/jhoonb/archivex be4efa7ec0c38ab76d56037014c90d48d6b13037"
 "github.com/ugorji/go 8c0409fcbb70099c748d71f714529204975f6c3f"
@@ -90,13 +92,15 @@ EGO_VENDOR=(
 "github.com/DataDog/datadog-go e67964b4021ad3a334e748e8811eb3cd6becbc6e"
 "github.com/tinylib/msgp af6442a0fcf6e2a1b824f70dd0c734f01e817751"
 "github.com/philhofer/fwd bb6d471dc95d4fe11e432687f8b70ff496cf3136"
+"github.com/florianl/go-conntrack 6d50e184fe3ef7ba0640303db5e6a5610bf4a297"
+"github.com/pkg/errors 645ef00459ed84a119197bfb8d8205042c6df63d"
+"github.com/mdlayher/netlink master"
+"github.com/benesch/cgosymbolizer bec6fe6e597bfeb28b9d8c0b998772635fceea8b"
+"github.com/coreos/go-semver 8ab6407b697782a06568d4b7f1db25550ec2e4c6"
+"github.com/ianlancetaylor/cgosymbolizer f5072df9c550dc687157e5d7efb50825cdf8f0eb"
 )
 
-inherit user golang-base golang-build golang-vcs-snapshot
-
-PATCHES=(
-#	"${FILESDIR}/datadog-fix-version-${PV}.patch"
-)
+inherit user golang-base golang-build golang-vcs-snapshot epatch
 
 ARCHIVE_URI="https://github.com/DataDog/datadog-agent/archive/${PV}.tar.gz -> datadog-agent-${PV}.tar.gz
 	${EGO_VENDOR_URI}
@@ -115,6 +119,7 @@ KEYWORDS="~amd64 ~x86"
 DEPEND=">=dev-lang/go-1.11.5
 	dev-vcs/mercurial
 	dev-python/pip
+	dev-util/cmake
 "
 
 RDEPEND="${DEPEND}
@@ -124,8 +129,7 @@ RDEPEND="${DEPEND}
 	snmp? ( net-analyzer/net-snmp )
 "
 
-JMXVERSION="0.27.0"
-AGENT_PAYLOAD_VERSION="4.7.1"
+REPO_PATH="github.com/DataDog/datadog-agent"
 
 pkg_setup() {
 	enewgroup dd-agent
@@ -133,24 +137,42 @@ pkg_setup() {
 }
 
 src_prepare() {
-	default
 	cd "${S}/src/github.com/DataDog/datadog-agent/"
-	eapply "${FILESDIR}/datadog-fix-version-${PV}.patch"
+	default
+	#epatch "${FILESDIR}/datadog-fix-version-${PV}.patch"
+	epatch "${FILESDIR}/netlink.patch"
+}
+
+build_rtloader() {
+	cd ${S}"/src/"${REPO_PATH}"/rtloader"
+	mkdir build
+	cd build
+	cmake -DBUILD_DEMO:BOOL=OFF -DCMAKE_INSTALL_PREFIX=../install -DDISABLE_PYTHON2:BOOL=OFF -DDISABLE_PYTHON3:BOOL=ON ..
+	make
+	make install
 }
 
 src_compile() {
-	REPO_PATH="github.com/DataDog/datadog-agent"
-	GOPATH="${S}" go build -race -a -o 'bin/agent/agent' \
-		-ldflags "-X ${REPO_PATH}/pkg/version.AgentVersion=${PV} -X ${REPO_PATH}/pkg/serializer.AgentPayloadVersion=${AGENT_PAYLOAD_VERSION} -X ${REPO_PATH}/pkg/collector/py.pythonHome=/usr -r /usr/lib64 -X github.com/DataDog/datadog-agent/pkg/version.Commit=48d2c88d"  \
-		-tags 'jmx log cpython process zlib netcgo secrets' \
-		${REPO_PATH}'/cmd/agent'
+	GO_VERSION_ARCH=`go version`
+	build_rtloader
+	cd ${S}
+	CGO_CFLAGS=" -I${S}/src/${REPO_PATH}/rtloader/install/include" \
+	CGO_LDFLAGS=" -L${S}/src/${REPO_PATH}/rtloader/install/lib64" \
+	GOPATH="${S}" go build -race -a -o 'bin/agent/agent' -gcflags="" -ldflags "-X ${REPO_PATH}/pkg/version.AgentVersion=${PV} -X ${REPO_PATH}/pkg/serializer.AgentPayloadVersion=${AGENT_PAYLOAD_VERSION} -r /usr/lib64 -X ${REPO_PATH}/pkg/version.AgentVersion=${PV} -X 'main.version=${PV}'-X ${REPO_PATH}/pkg/collector/python.pythonHome2=/opt/datadog-agent/embedded " -tags 'jmx log cpython python process zlib netcgo secrets' ${REPO_PATH}'/cmd/agent'
 	GOPATH="${S}" go generate ${REPO_PATH}'/cmd/agent'
 
-	GOPATH="${S}" go build -race -a -o 'bin/dogstatsd' 'github.com/DataDog/datadog-agent/cmd/dogstatsd'
+	GOPATH="${S}" go build -race -a -o 'bin/dogstatsd' ${REPO_PATH}'/cmd/dogstatsd'
 	GOPATH="${S}" go generate 'github.com/DataDog/datadog-agent/cmd/dogstatsd'
 
-	GOPATH="${S}" go build -race -o 'bin/trace-agent' 'github.com/DataDog/datadog-agent/cmd/trace-agent'
-	GOPATH="${S}" go generate 'github.com/DataDog/datadog-agent/cmd/trace-agent'
+	GOPATH="${S}" go build -race -a -o 'bin/trace-agent' ${REPO_PATH}'/cmd/trace-agent'
+	GOPATH="${S}" go generate ${REPO_PATH}'/cmd/trace-agent'
+
+	GOPATH="${S}" go build -a -o 'bin/process-agent' -tags 'jmx log python process zlib netcgo secrets' -ldflags="-X ${REPO_PATH}/pkg/version.AgentVersion=${PV} -X ${REPO_PATH}/pkg/serializer.AgentPayloadVersion=${AGENT_PAYLOAD_VERSION} -r /usr/lib64 -X 'main.GitBranch=HEAD' -X 'main.Version=${PV}' -X 'main.GoVersion=${GO_VERSION_ARCH}'" ${REPO_PATH}'/cmd/process-agent'
+	GOPATH="${S}" go generate ${REPO_PATH}'/cmd/process-agent'
+
+	GOPATH="${S}" go run src/${REPO_PATH}/pkg/config/render_config.go agent-py2py3 src/${REPO_PATH}/pkg/config/config_template.yaml src/${REPO_PATH}/cmd/agent/dist/datadog.yaml
+
+	GOPATH="${S}" go run src/${REPO_PATH}/pkg/config/render_config.go system-probe src/${REPO_PATH}/pkg/config/config_template.yaml src/${REPO_PATH}/cmd/agent/dist/system-probe.yaml
 }
 
 src_install() {
@@ -160,19 +182,34 @@ src_install() {
 	dodir /opt/datadog-agent/bin/agent
 	insinto /opt/datadog-agent/bin/agent
 	doins ${S}/bin/agent/agent
+	fperms 0755 /opt/datadog-agent/bin/agent/agent
+
+	insinto /opt/datadog-agent/.local/bin
 	doins ${S}/bin/dogstatsd
 	doins ${S}/bin/trace-agent
-	fperms 0755 /opt/datadog-agent/bin/agent/agent
-	fperms 0755 /opt/datadog-agent/bin/agent/dogstatsd
+	doins ${S}/bin/process-agent
+	fperms 0755 /opt/datadog-agent/.local/bin/dogstatsd
+	fperms 0755 /opt/datadog-agent/.local/bin/trace-agent
+	fperms 0755 /opt/datadog-agent/.local/bin/process-agent
 
 	newinitd "${FILESDIR}"/datadog-agent.initd datadog-agent
+	newinitd "${FILESDIR}"/process-agent.initd process-agent
+	newinitd "${FILESDIR}"/trace-agent.initd trace-agent
 	newconfd "${FILESDIR}"/datadog-agent.confd datadog-agent
+	newconfd "${FILESDIR}"/trace-agent.confd trace-agent
+
+	insinto /opt/datadog-agent/.local/lib64
+	doins ${S}/src/${REPO_PATH}/rtloader/install/lib64/*
+	fperms 0755  /opt/datadog-agent/.local/lib64/libdatadog-agent-rtloader.so.0.1.0
+	fperms 0755  /opt/datadog-agent/.local/lib64/libdatadog-agent-two.so
+	insinto /opt/datadog-agent/.local/include
+	doins ${S}/src/${REPO_PATH}/rtloader/install/include/*
 
 	keepdir /etc/datadog-agent
 	keepdir /etc/datadog-agent/conf.d
 	insinto /etc/datadog-agent
 	newins ${DDROOT}/cmd/agent/dist/datadog.yaml datadog.yaml.example
-	newins ${DDROOT}/cmd/agent/dist/network-tracer.yaml network-tracer.yaml.example
+	#newins ${DDROOT}/cmd/agent/dist/network-tracer.yaml network-tracer.yaml.example
 
 	insinto /etc/datadog-agent/conf.d
 	doins -r ${DDROOT}/cmd/agent/dist/conf.d/cpu.d
@@ -188,11 +225,17 @@ src_install() {
 
 	dodir /opt/datadog-agent/bin/agent/dist
 	insinto /opt/datadog-agent/bin/agent/dist
-	doins -r ${DDROOT}/cmd/agent/dist/checks
+	#doins -r ${DDROOT}/cmd/agent/dist/checks
 	doins -r ${DDROOT}/pkg/status/dist/templates
 	#doins -r ${DDROOT}/cmd/agent/dist/utils
 	#doins -r ${DDROOT}/cmd/agent/dist/views
 	doins ${DDROOT}/cmd/agent/dist/config.py
+
+	dosym /opt/datadog-agent/bin/agent/agent /usr/bin/datadog-agent
+
+	dosym /opt/datadog-agent/.local/lib64/libdatadog-agent-rtloader.so.0.1.0 /usr/lib/libdatadog-agent-rtloader.so.0.1.0
+	dosym /opt/datadog-agent/.local/lib64/libdatadog-agent-rtloader.so.0.1.0 /usr/lib/libdatadog-agent-rtloader.so.1
+	dosym /opt/datadog-agent/.local/lib64/libdatadog-agent-two.so /usr/lib/libdatadog-agent-two.so
 
 	keepdir /var/log/datadog
 	dodir /var/run/datadog
@@ -206,6 +249,7 @@ pkg_preinst() {
 
 	wget https://dl.bintray.com/datadog/datadog-maven/com/datadoghq/jmxfetch/${JMXVERSION}/jmxfetch-${JMXVERSION}-jar-with-dependencies.jar
 	newins jmxfetch-${JMXVERSION}-jar-with-dependencies.jar jmxfetch-${JMXVERSION}-jar-with-dependencies.jar
+	dosym /opt/datadog-agent/bin/agent/dist/jmx/jmxfetch-${JMXVERSION}-jar-with-dependencies.jar /opt/datadog-agent/bin/agent/dist/jmx/jmxfetch.jar
 
 	#integrations
 	dosym /opt/datadog-agent/.local /opt/datadog-agent/embedded
@@ -245,3 +289,4 @@ pkg_preinst() {
 	fowners -R dd-agent:dd-agent /var/log/datadog
 	fowners -R dd-agent:dd-agent /var/run/datadog
 }
+

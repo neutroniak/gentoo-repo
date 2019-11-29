@@ -2,11 +2,11 @@
 # Copyright 2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-name="DataDog process-agent daemon"
+name="DataDog trace-agent daemon"
 description=""
-command_args=""
-command=/opt/datadog-agent/embedded/bin/process-agent
+command_args="--config ${DATADOG_CONFIG_FILE} ${TRACE_AGENT_ARGS}"
+command=/opt/datadog-agent/embedded/bin/trace-agent
 command_user="${DATADOG_USER:-dd-agent}:${DATADOG_GROUP:-dd-agent}"
-pid_file="/var/run/process-agent.pid"
+pid_file="/var/run/trace-agent.pid"
 start_stop_daemon_args="--background"
 

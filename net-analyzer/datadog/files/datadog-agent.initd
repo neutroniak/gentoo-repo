@@ -3,9 +3,10 @@
 # Distributed under the terms of the GNU General Public License v2
 
 export LD_LIBRARY_PATH="/opt/datadog-agent/embedded/lib64"
-command=" /opt/datadog-agent/bin/agent/agent"
+command="/opt/datadog-agent/bin/agent/agent"
 command_args="run ${DATADOG_ARGS} -c ${DATADOG_CONFIG_FILE}"
 name="Datadog Agent"
 pid_file="/var/run/datadog-agent.pid"
 command_user="${DATADOG_USER:-dd-agent}:${DATADOG_GROUP:-dd-agent}"
 start_stop_daemon_args="--background"
+

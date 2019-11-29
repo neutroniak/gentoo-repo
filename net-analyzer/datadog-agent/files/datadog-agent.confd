@@ -1,6 +1,0 @@
-#/etc/conf.d/datadog-agent config file
-
-DATADOG_CONFIG_FILE="/etc/datadog-agent/datadog.yaml"
-
-#DATADOG_ARGS=""
-#

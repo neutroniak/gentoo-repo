@@ -1,0 +1,7 @@
+#/etc/conf.d/trace-agent config file
+
+DATADOG_CONFIG_FILE="/etc/datadog-agent/datadog.yaml"
+
+#TRACE_AGENT_ARGS=""
+#
+
