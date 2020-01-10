@@ -10,3 +10,6 @@ command_user="${DATADOG_USER:-dd-agent}:${DATADOG_GROUP:-dd-agent}"
 pid_file="/var/run/trace-agent.pid"
 start_stop_daemon_args="--background"
 
+depend(){
+	after datadog-agent
+}
