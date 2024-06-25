@@ -10,7 +10,7 @@ EGO_PN="github.com/istio/istio/..."
 DESCRIPTION=""
 HOMEPAGE=""
 SRC_URI="https://github.com/istio/istio/archive/refs/tags/${PV}.tar.gz -> ${P}.tar.gz
-	http://mrgz.org/${P}-deps.tar.xz"
+	https://gentoo.neutroniak.com/${P}-deps.tar.xz"
 
 LICENSE="Apache-2.0 MIT BSD MPL-2.0 BSD-2 ISC imagemagick"
 
